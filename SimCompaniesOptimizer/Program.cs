@@ -1,5 +1,7 @@
 // See https://aka.ms/new-console-template for more information
 
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 using Autofac;
@@ -68,6 +70,9 @@ static async void RunOptions(ParameterOptions options)
     }
     
     var restarts = (options.Restarts ?? 1);
+    var results = new ConcurrentBag<ProductionStatistic>();
+    var stopWatch = new Stopwatch();
+    stopWatch.Start();
     Parallel.For(0, restarts, new ParallelOptions { MaxDegreeOfParallelism = 1 }, async (run, state) =>
     {
         Console.WriteLine($"Optimization run {run} of {restarts}");
@@ -75,14 +80,21 @@ static async void RunOptions(ParameterOptions options)
         var bestResults = await profitOptimizer.OptimalBuildingsForGivenResourcesRandom(
             options.Resources.Select(r => (ResourceId)r), options.Generations, CancellationToken.None,
             maxBuildingPlaces: options.MaxBuildingPlaces, seed: options.Seed);
-        var veryBest = bestResults.MaxBy(b => b.TotalProfitPerHour);
-        veryBest?.PrintToConsole();
-
-        await using var fileStream =
-            new StreamWriter($"{DateTime.Now.Ticks}_bestResults_{veryBest?.TotalProfitPerHour:F0}.json");
-        var serializedResult = JsonSerializer.Serialize(bestResults);
-        fileStream.Write(serializedResult);
-        fileStream.Close();
+        var bestOfRun = bestResults.MaxBy(b => b.TotalProfitPerHour);
+        results.Add(bestOfRun);
+        bestOfRun?.PrintToConsole(false);
+        Console.WriteLine($"Optimization run {run} finished.");
     });
+    
+    var veryBest = results.MaxBy(b => b.TotalProfitPerHour);
+    stopWatch.Stop();
+    Console.WriteLine($"{restarts} optimization runs with {options.Generations} generations finished within {stopWatch.Elapsed}. Total best profit per hour {veryBest.TotalProfitPerHour}");
+    var orderedResults = results.OrderByDescending(r => r.TotalProfitPerHour).ToList();
+    
+    await using var fileStream =
+        new StreamWriter($"{DateTime.Now.Ticks}_bestResults_{veryBest?.TotalProfitPerHour:F0}.json");
+    var serializedResult = JsonSerializer.Serialize(orderedResults);
+    fileStream.Write(serializedResult);
+    fileStream.Close();
 
 }

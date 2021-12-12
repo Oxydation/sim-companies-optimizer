@@ -4,7 +4,7 @@ namespace SimCompaniesOptimizer.Visualization;
 
 public static class ProductionStatisticPrinterExtension
 {
-    public static void PrintToConsole(this ProductionStatistic productionStatistic)
+    public static void PrintToConsole(this ProductionStatistic productionStatistic, bool listResourceDetails)
     {
         Console.WriteLine("Printing simulation result ...");
         Console.WriteLine($"Duration: {productionStatistic.CalculationDuration}");
@@ -16,6 +16,11 @@ public static class ProductionStatisticPrinterExtension
         Console.WriteLine("Profit per Hour | Profit per Day | Profit per Week");
         Console.WriteLine(
             $"{productionStatistic.TotalProfitPerHour:F1} | {productionStatistic.TotalProfitPerDay:F1} | {productionStatistic.TotalProfitPerWeek:F1}");
+
+        if (listResourceDetails)
+        {
+            
+       
         Console.WriteLine();
         Console.WriteLine("Detailed resource statistic");
         Console.WriteLine(
@@ -24,5 +29,6 @@ public static class ProductionStatisticPrinterExtension
         foreach (var (resourceId, resourceStatistic) in productionStatistic.ResourceStatistic)
             Console.WriteLine(
                 $"{resourceId} | {resourceStatistic.AveragedSourcingCost:F1} | {resourceStatistic.ProductionBuildingLevels} | {resourceStatistic.ProfitPerDay:F1} | {resourceStatistic.AmountBoughtPerDay:F1} | {resourceStatistic.AmountProducedPerDay:F1} | {resourceStatistic.UnitsToSellPerDay:F1}");
-    }
+        }
+        }
 }

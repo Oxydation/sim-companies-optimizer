@@ -72,10 +72,27 @@ public class ProfitOptimizer : IProfitOptimizer
         var bestProductionStatistic = new ProductionStatistic();
         var bestStatistics = new ConcurrentBag<ProductionStatistic>();
 
-        var pregeneratedCompanyParameters = new ConcurrentBag<CompanyParameters>();
-        Parallel.For(0, generations, (i, state) =>
+        // var pregeneratedCompanyParameters = new ConcurrentBag<CompanyParameters>();
+        // Parallel.For(0, generations, (i, state) =>
+        // {
+        //     var companyParams = new CompanyParameters
+        //     {
+        //         CooOverheadReduction = 7,
+        //         ProductionSpeed = 1.06,
+        //         InputResourcesFromContracts = true,
+        //         MaxBuildingPlaces = maxBuildingPlaces,
+        //         Seed = usedSeed,
+        //         BuildingsPerResource =
+        //             GenerateRandomResourceBuildingLevels(resources, random, buildingLevelLimit, maxBuildingPlaces)
+        //     };
+        //
+        //     pregeneratedCompanyParameters.Add(companyParams);
+        // });
+
+       // Console.WriteLine($"Pre-generated {generations} company parameters in {stopWatch.Elapsed}.");
+        Parallel.For(0, generations, async (i, state) =>
         {
-            var companyParams = new CompanyParameters
+            var companyParam = new CompanyParameters
             {
                 CooOverheadReduction = 7,
                 ProductionSpeed = 1.06,
@@ -85,14 +102,6 @@ public class ProfitOptimizer : IProfitOptimizer
                 BuildingsPerResource =
                     GenerateRandomResourceBuildingLevels(resources, random, buildingLevelLimit, maxBuildingPlaces)
             };
-
-            pregeneratedCompanyParameters.Add(companyParams);
-        });
-
-        Console.WriteLine($"Pre-generated {generations} company parameters in {stopWatch.Elapsed}.");
-
-        Parallel.ForEach(pregeneratedCompanyParameters.ToList(), async (companyParam, state) =>
-        {
             var result =
                 await _profitCalculator.CalculateProductionStatisticForCompany(companyParam, cancellationToken);
             if (result.TotalProfitPerHour > currentMaxProfit)

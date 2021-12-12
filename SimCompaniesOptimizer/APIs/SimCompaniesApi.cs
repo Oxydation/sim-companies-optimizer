@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Collections.Concurrent;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using SimCompaniesOptimizer.Database;
 using SimCompaniesOptimizer.Interfaces;
@@ -10,7 +11,7 @@ public class SimCompaniesApi : ISimCompaniesApi
 {
     private readonly IExchangeTrackerApi _exchangeTrackerApi;
     private readonly ILogger<SimCompaniesApi> _logger;
-    private readonly Dictionary<ResourceId, Resource> _inMemoryResourceCache = new();
+    private readonly ConcurrentDictionary<ResourceId, Resource> _inMemoryResourceCache = new();
 
     public SimCompaniesApi(ILogger<SimCompaniesApi> logger, IExchangeTrackerApi exchangeTrackerApi)
     {
