@@ -89,7 +89,7 @@ public class ProfitOptimizer : IProfitOptimizer
         //     pregeneratedCompanyParameters.Add(companyParams);
         // });
 
-       // Console.WriteLine($"Pre-generated {generations} company parameters in {stopWatch.Elapsed}.");
+        // Console.WriteLine($"Pre-generated {generations} company parameters in {stopWatch.Elapsed}.");
         Parallel.For(0, generations, async (i, state) =>
         {
             var companyParam = new CompanyParameters
@@ -111,7 +111,7 @@ public class ProfitOptimizer : IProfitOptimizer
                 bestStatistics.Add(result);
                 // Console.WriteLine($"New max profit found {currentMaxProfit:F0}");
                 Console.WriteLine(
-                        $"Iteration with new max profit finished in {result.CalculationDuration}. {result.TotalProfitPerHour:F0} profit/h");
+                    $"Iteration with new max profit finished in {result.CalculationDuration}. {result.TotalProfitPerHour:F0} profit/h");
             }
         });
 

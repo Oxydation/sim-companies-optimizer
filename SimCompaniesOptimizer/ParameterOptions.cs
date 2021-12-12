@@ -6,8 +6,9 @@ public class ParameterOptions
 {
     [Option('g', "generations", HelpText = "Amount of generations to find optimum.", Required = true)]
     public int Generations { get; set; } = 30;
-    
-    [Option('t', "restarts", HelpText = "Amount of restarts with a new random seed. Defaulting to one run", Required = false)]
+
+    [Option('t', "restarts", HelpText = "Amount of restarts with a new random seed. Defaulting to one run",
+        Required = false)]
     public int? Restarts { get; set; } = 1;
 
     [Option('b', "maxbuildinglevel", HelpText = "The max building level of one resource. Default is 30.",
@@ -30,7 +31,7 @@ public class ParameterOptions
             "The seed to use for the random values. Default is Environment.TickCount.",
         Required = false)]
     public int? Seed { get; set; }
-    
+
     [Option('e', "exsync",
         HelpText =
             "Forces to sync the exchange tracker with current values.",

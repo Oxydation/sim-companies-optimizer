@@ -10,8 +10,8 @@ namespace SimCompaniesOptimizer.APIs;
 public class SimCompaniesApi : ISimCompaniesApi
 {
     private readonly IExchangeTrackerApi _exchangeTrackerApi;
-    private readonly ILogger<SimCompaniesApi> _logger;
     private readonly ConcurrentDictionary<ResourceId, Resource> _inMemoryResourceCache = new();
+    private readonly ILogger<SimCompaniesApi> _logger;
 
     public SimCompaniesApi(ILogger<SimCompaniesApi> logger, IExchangeTrackerApi exchangeTrackerApi)
     {
@@ -41,10 +41,7 @@ public class SimCompaniesApi : ISimCompaniesApi
         int quality = 0)
     {
         var cached = _inMemoryResourceCache.TryGetValue(resourceId, out var memCachedResource);
-        if (cached)
-        {
-            return memCachedResource;
-        }
+        if (cached) return memCachedResource;
 
         await using var db = new SimCompaniesDbContext();
         var cachedResource = db.Resources.FirstOrDefault(r => r.Id == resourceId);

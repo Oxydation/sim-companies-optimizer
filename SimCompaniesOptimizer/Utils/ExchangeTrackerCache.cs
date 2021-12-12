@@ -16,7 +16,7 @@ public class ExchangeTrackerCache : IExchangeTrackerCache
     }
 
     public async Task RefreshCache(CancellationToken cancellationToken)
-    { 
+    {
         await using var dbContext = new SimCompaniesDbContext();
         if (dbContext.ExchangeTrackerEntries.Any())
         {

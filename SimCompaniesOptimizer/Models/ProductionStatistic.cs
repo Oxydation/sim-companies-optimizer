@@ -40,6 +40,6 @@ public class ResourceStatistic
 
     public double RevenuePerHour { get; set; }
     public double ExpensePerHour { get; set; }
-    
+
     public double ExchangePrice { get; set; }
 }
