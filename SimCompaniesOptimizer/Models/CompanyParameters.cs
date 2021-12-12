@@ -14,6 +14,7 @@ public class CompanyParameters
     public bool InputResourcesFromContracts { get; set; }
 
     public int MaxBuildingPlaces { get; set; }
+    public int? Seed { get; set; }
 
     public int GetTotalBuildings()
     {

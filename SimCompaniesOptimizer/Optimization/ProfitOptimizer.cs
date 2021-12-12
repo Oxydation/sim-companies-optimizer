@@ -59,9 +59,11 @@ public class ProfitOptimizer : IProfitOptimizer
         IEnumerable<ResourceId> resources,
         int generations, CancellationToken cancellationToken,
         int buildingLevelLimit = 30,
-        int maxBuildingPlaces = 12)
+        int maxBuildingPlaces = 12,
+        int? seed = null)
     {
-        var random = new Random();
+        var usedSeed = seed ?? Environment.TickCount;
+        var random = new Random(usedSeed);
 
         var stopWatch = new Stopwatch();
         stopWatch.Start();
@@ -79,6 +81,7 @@ public class ProfitOptimizer : IProfitOptimizer
                 ProductionSpeed = 1.06,
                 InputResourcesFromContracts = true,
                 MaxBuildingPlaces = maxBuildingPlaces,
+                Seed = usedSeed,
                 BuildingsPerResource =
                     GenerateRandomResourceBuildingLevels(resources, random, buildingLevelLimit, maxBuildingPlaces)
             };
@@ -97,11 +100,11 @@ public class ProfitOptimizer : IProfitOptimizer
                 currentMaxProfit = result.TotalProfitPerHour;
                 bestProductionStatistic = result;
                 bestStatistics.Add(result);
-                Console.WriteLine($"New max profit found {currentMaxProfit}");
+                Console.WriteLine($"New max profit found {currentMaxProfit:F0}");
             }
 
             Console.WriteLine(
-                $"Iteration finished in {result.CalculationDuration} with {result.TotalProfitPerHour} profit/h");
+                $"Iteration finished in {result.CalculationDuration} with {result.TotalProfitPerHour:F0} profit/h");
         });
 
         stopWatch.Stop();

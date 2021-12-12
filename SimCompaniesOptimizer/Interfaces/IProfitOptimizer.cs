@@ -9,5 +9,6 @@ public interface IProfitOptimizer
 
     public Task<List<ProductionStatistic>> OptimalBuildingsForGivenResourcesRandom(IEnumerable<ResourceId> resources,
         int generations, CancellationToken cancellationToken, int buildingLevelLimit = 30,
-        int maxBuildingPlaces = 12);
+        int maxBuildingPlaces = 12,
+        int? seed = null);
 }

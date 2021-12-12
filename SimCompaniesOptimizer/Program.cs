@@ -59,14 +59,23 @@ static async void RunOptions(ParameterOptions options)
     //     ResourceId.Minerals, ResourceId.Chemicals, ResourceId.Batteries, ResourceId.HighGradeEComps,
     //     ResourceId.GoldenBars, ResourceId.GoldOre, ResourceId.IonDrive
     // }
-    var bestResults = await profitOptimizer.OptimalBuildingsForGivenResourcesRandom(
-        options.Resources.Select(r => (ResourceId)r), options.Generations, CancellationToken.None,
-        maxBuildingPlaces: options.MaxBuildingPlaces);
-    var veryBest = bestResults.MaxBy(b => b.TotalProfitPerHour);
-    veryBest?.PrintToConsole();
 
-    await using var fileStream =
-        new StreamWriter($"{DateTime.Now.Ticks}_bestResults_{veryBest?.TotalProfitPerHour:F0}.json");
-    var serializedResult = JsonSerializer.Serialize(bestResults);
-    fileStream.Write(serializedResult);
+    var restarts = (options.Restarts ?? 1);
+    for (var run = 0; run < restarts; run++)
+    {
+        Console.WriteLine($"Optimization run {run} of {restarts}");
+        
+        var bestResults = await profitOptimizer.OptimalBuildingsForGivenResourcesRandom(
+            options.Resources.Select(r => (ResourceId)r), options.Generations, CancellationToken.None,
+            maxBuildingPlaces: options.MaxBuildingPlaces, seed: options.Seed);
+        var veryBest = bestResults.MaxBy(b => b.TotalProfitPerHour);
+        veryBest?.PrintToConsole();
+
+        await using var fileStream =
+            new StreamWriter($"{DateTime.Now.Ticks}_bestResults_{veryBest?.TotalProfitPerHour:F0}.json");
+        var serializedResult = JsonSerializer.Serialize(bestResults);
+        fileStream.Write(serializedResult);
+        fileStream.Close();
+    }
+   
 }
