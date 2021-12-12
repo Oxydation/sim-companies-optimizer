@@ -28,7 +28,7 @@ public class Resource
 
     public double CalcUnitWorkerCost(double productionSpeed)
     {
-        return BaseSalary / (ProducedAnHour * productionSpeed);
+        return BaseSalary / ProducedAnHour;
     }
 
     public double CalcUnitAdminCost(double adminOverhead, double productionSpeed)

@@ -38,32 +38,20 @@ var companyParameters = new CompanyParameters
     BuildingsPerResource = new Dictionary<ResourceId, int>
     {
         { ResourceId.Batteries, 15 },
-        { ResourceId.HighGradeEComps, 15 }
+        { ResourceId.HighGradeEComps, 15 },
+        { ResourceId.Minerals, 13 },
+        { ResourceId.Chemicals, 6 }
     }
 };
 var simCompaniesApi = serviceProvider.GetService<ISimCompaniesApi>();
-var testrse = await simCompaniesApi.GetResourceAsync(ResourceId.Batteries, CancellationToken.None);
-await simCompaniesApi.GetResourceAsync(ResourceId.HighGradeEComps, CancellationToken.None);
-await simCompaniesApi.GetResourceAsync(ResourceId.Chemicals, CancellationToken.None);
-await simCompaniesApi.GetResourceAsync(ResourceId.GoldenBars, CancellationToken.None);
-await simCompaniesApi.GetResourceAsync(ResourceId.Transport, CancellationToken.None);
-await simCompaniesApi.GetResourceAsync(ResourceId.Silicon, CancellationToken.None);
+//await simCompaniesApi.GetAllResourcesAsync(CancellationToken.None);
 
-// await simCompaniesApi.GetAllResourcesAsync(CancellationToken.None, TimeSpan.FromSeconds(5));
-await simCompaniesApi.UpdateExchangePriceOfResource(ResourceId.Batteries, CancellationToken.None);
-await simCompaniesApi.UpdateExchangePriceOfResource(ResourceId.Chemicals, CancellationToken.None);
-await simCompaniesApi.UpdateExchangePriceOfResource(ResourceId.Silicon, CancellationToken.None);
-await simCompaniesApi.UpdateExchangePriceOfResource(ResourceId.GoldenBars, CancellationToken.None);
-await simCompaniesApi.UpdateExchangePriceOfResource(ResourceId.Transport, CancellationToken.None);
-await simCompaniesApi.UpdateExchangePriceOfResource(ResourceId.HighGradeEComps, CancellationToken.None);
-
+//await simCompaniesApi.UpdateExchangePriceOfAllResources(CancellationToken.None);
 var calculator = new ProfitCalculator(simCompaniesApi);
-// var profit = await
-//     calculator.CalculateProfitOfResourceByMarket(ResourceId.Batteries, companyParameters, CancellationToken.None);
-
 var productionStatistic =
     await calculator.CalculateProductionStatisticForCompany(companyParameters,
         CancellationToken.None);
-Console.WriteLine(testrse);
+
 // Console.WriteLine("Profit for 1 level per hour: " + profit);
-Console.WriteLine("Company profit per day " + productionStatistic);
+Console.WriteLine(
+    $"Company profit per day {+productionStatistic.TotalProfitPerDay}. Duration: {productionStatistic.CalculationDuration}");

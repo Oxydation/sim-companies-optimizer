@@ -10,6 +10,14 @@ public interface IExchangeTrackerCache
 
     public int GetIndexOfResourceId(ResourceId resourceId)
     {
-        return Array.IndexOf(Enum.GetValues<ResourceId>(), resourceId);
+        if (NotSellableResourceIds.NotSellableResources.Contains(resourceId))
+        {
+            return -1;
+        }
+
+        var values = Enum.GetValues<ResourceId>().ToList();
+         values.RemoveAll(x => NotSellableResourceIds.NotSellableResources.Contains(x));
+         return values.IndexOf(resourceId);
+       // return Array.IndexOf(, resourceId);
     }
 }

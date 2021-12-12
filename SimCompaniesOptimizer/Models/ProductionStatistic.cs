@@ -10,9 +10,11 @@ public class ProductionStatistic
     public double TotalRevenuePerHour { get; set; }
     public double TotalExpensePerHour { get; set; }
 
-    public CompanyParameters UsedCompanyParameters { get; set; } = new();
+    public CompanyParameters CompanyParameters { get; set; } = new();
 
     public Dictionary<ResourceId, ResourceStatistic> ResourceStatistic { get; set; } = new();
+
+    public TimeSpan CalculationDuration { get; set; }
 }
 
 public class ResourceStatistic
@@ -23,9 +25,10 @@ public class ResourceStatistic
     public double AmountBought => UnusedUnits < 0 ? -UnusedUnits : 0;
     public double TotalUnits => AmountProduced + AmountBought;
 
+    public double UnitsToSell => UnusedUnits > 0 ? UnusedUnits : 0;
     public double AveragedSourcingCost { get; set; }
     public double PercentageContributionToProfit { get; set; }
-    public double ProfitPerHour { get; set; }
+    public double ProfitPerHour => RevenuePerHour - ExpensePerHour;
     public double RevenuePerHour { get; set; }
     public double ExpensePerHour { get; set; }
 }

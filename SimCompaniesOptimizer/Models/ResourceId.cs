@@ -1,5 +1,20 @@
 ﻿namespace SimCompaniesOptimizer.Models;
 
+public static class NotSellableResourceIds
+{
+    public static HashSet<ResourceId> NotSellableResources => new HashSet<ResourceId>()
+    {
+        ResourceId.SubOrbitalRocket,
+        ResourceId.SubOrbital2ndStage,
+        ResourceId.OrbitalBooster,
+        ResourceId.Starship,
+        ResourceId.BFR,
+        ResourceId.JumboJet,
+        ResourceId.LuxuryJet,
+        ResourceId.SingleEnginePlane,
+        ResourceId.Satellite
+    };
+}
 public enum ResourceId
 {
     Power = 1,
