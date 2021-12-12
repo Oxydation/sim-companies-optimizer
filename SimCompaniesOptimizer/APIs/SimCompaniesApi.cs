@@ -10,6 +10,7 @@ public class SimCompaniesApi : ISimCompaniesApi
 {
     private readonly IExchangeTrackerApi _exchangeTrackerApi;
     private readonly ILogger<SimCompaniesApi> _logger;
+    private readonly Dictionary<ResourceId, Resource> _inMemoryResourceCache = new();
 
     public SimCompaniesApi(ILogger<SimCompaniesApi> logger, IExchangeTrackerApi exchangeTrackerApi)
     {
@@ -38,10 +39,20 @@ public class SimCompaniesApi : ISimCompaniesApi
     public async Task<Resource?> GetResourceAsync(ResourceId resourceId, CancellationToken cancellationToken,
         int quality = 0)
     {
+        var cached = _inMemoryResourceCache.TryGetValue(resourceId, out var memCachedResource);
+        if (cached)
+        {
+            return memCachedResource;
+        }
+
         await using var db = new SimCompaniesDbContext();
         var cachedResource = db.Resources.FirstOrDefault(r => r.Id == resourceId);
 
-        if (cachedResource != null) return cachedResource;
+        if (cachedResource != null)
+        {
+            _inMemoryResourceCache.TryAdd(resourceId, cachedResource);
+            return cachedResource;
+        }
 
         var uri = $"{SimCompaniesConstants.BaseUrl}{SimCompaniesConstants.Encyclopedia}{quality}/{(int)resourceId}/";
         using var client = new HttpClient();

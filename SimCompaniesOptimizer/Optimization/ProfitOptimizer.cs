@@ -100,11 +100,10 @@ public class ProfitOptimizer : IProfitOptimizer
                 currentMaxProfit = result.TotalProfitPerHour;
                 bestProductionStatistic = result;
                 bestStatistics.Add(result);
-                Console.WriteLine($"New max profit found {currentMaxProfit:F0}");
+                // Console.WriteLine($"New max profit found {currentMaxProfit:F0}");
+                Console.WriteLine(
+                        $"Iteration with new max profit finished in {result.CalculationDuration}. {result.TotalProfitPerHour:F0} profit/h");
             }
-
-            Console.WriteLine(
-                $"Iteration finished in {result.CalculationDuration} with {result.TotalProfitPerHour:F0} profit/h");
         });
 
         stopWatch.Stop();

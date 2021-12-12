@@ -129,6 +129,7 @@ public class ProfitCalculator : IProfitCalculator
             var buildingLevel = companyParameters.BuildingsPerResource[resourceId];
             var totalUnitsProducedPerHour = resource.ProducedAnHour * buildingLevel;
             resourceStatistic.ProductionBuildingLevels = buildingLevel;
+            resourceStatistic.ExchangePrice = resource.CurrentExchangePrice;
 
             if (resourceStatistic.AmountProducedPerHour == 0 && resourceStatistic.UnusedUnits == 0)
             {

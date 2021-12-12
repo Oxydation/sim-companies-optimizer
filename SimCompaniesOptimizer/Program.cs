@@ -68,7 +68,7 @@ static async void RunOptions(ParameterOptions options)
     }
     
     var restarts = (options.Restarts ?? 1);
-    for (var run = 0; run < restarts; run++)
+    Parallel.For(0, restarts, new ParallelOptions { MaxDegreeOfParallelism = 1 }, async (run, state) =>
     {
         Console.WriteLine($"Optimization run {run} of {restarts}");
         
@@ -83,6 +83,6 @@ static async void RunOptions(ParameterOptions options)
         var serializedResult = JsonSerializer.Serialize(bestResults);
         fileStream.Write(serializedResult);
         fileStream.Close();
-    }
-   
+    });
+
 }
