@@ -19,16 +19,25 @@ public class ProductionStatistic
 
 public class ResourceStatistic
 {
+    public double ProductionBuildingLevels { get; set; }
     public double UnusedUnits { get; set; }
 
-    public double AmountProduced { get; set; }
-    public double AmountBought => UnusedUnits < 0 ? -UnusedUnits : 0;
-    public double TotalUnits => AmountProduced + AmountBought;
+    public double AmountProducedPerHour { get; set; }
 
-    public double UnitsToSell => UnusedUnits > 0 ? UnusedUnits : 0;
+    public double AmountProducedPerDay => AmountProducedPerHour * TimeSpan.FromDays(1).TotalHours;
+    public double AmountBoughtPerDay => AmountBoughtPerHour * TimeSpan.FromDays(1).TotalHours;
+
+    public double AmountBoughtPerHour => UnusedUnits < 0 ? -UnusedUnits : 0;
+    public double TotalUnitsPerHour => AmountProducedPerHour + AmountBoughtPerHour;
+
+    public double UnitsToSellPerHour => UnusedUnits > 0 ? UnusedUnits : 0;
+    public double UnitsToSellPerDay => UnitsToSellPerHour * TimeSpan.FromDays(1).TotalHours;
     public double AveragedSourcingCost { get; set; }
-    public double PercentageContributionToProfit { get; set; }
+
     public double ProfitPerHour => RevenuePerHour - ExpensePerHour;
+
+    public double ProfitPerDay => ProfitPerHour * TimeSpan.FromDays(1).TotalHours;
+
     public double RevenuePerHour { get; set; }
     public double ExpensePerHour { get; set; }
 }

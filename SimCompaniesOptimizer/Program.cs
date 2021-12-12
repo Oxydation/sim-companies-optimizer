@@ -11,6 +11,7 @@ using SimCompaniesOptimizer.Database;
 using SimCompaniesOptimizer.Interfaces;
 using SimCompaniesOptimizer.Models;
 using SimCompaniesOptimizer.Utils;
+using SimCompaniesOptimizer.Visualization;
 
 Console.WriteLine($"Starting sim companies optimizer {Assembly.GetExecutingAssembly().GetName().Version}");
 
@@ -35,12 +36,10 @@ var companyParameters = new CompanyParameters
 {
     CooOverheadReduction = 7,
     ProductionSpeed = 1.06,
+    InputResourcesFromContracts = false,
     BuildingsPerResource = new Dictionary<ResourceId, int>
     {
-        { ResourceId.Batteries, 15 },
-        { ResourceId.HighGradeEComps, 15 },
-        { ResourceId.Minerals, 13 },
-        { ResourceId.Chemicals, 6 }
+        { ResourceId.IonDrive, 60 }
     }
 };
 var simCompaniesApi = serviceProvider.GetService<ISimCompaniesApi>();
@@ -52,6 +51,4 @@ var productionStatistic =
     await calculator.CalculateProductionStatisticForCompany(companyParameters,
         CancellationToken.None);
 
-// Console.WriteLine("Profit for 1 level per hour: " + profit);
-Console.WriteLine(
-    $"Company profit per day {+productionStatistic.TotalProfitPerDay}. Duration: {productionStatistic.CalculationDuration}");
+productionStatistic.PrintToConsole();

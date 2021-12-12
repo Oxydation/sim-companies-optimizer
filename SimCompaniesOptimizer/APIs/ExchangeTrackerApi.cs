@@ -16,10 +16,7 @@ public class ExchangeTrackerApi : IExchangeTrackerApi
     public async Task<Price?> GetCurrentPrice(ResourceId resourceId, CancellationToken cancellationToken)
     {
         var index = GetIndex(resourceId);
-        if (index== -1)
-        {
-            return null;
-        }
+        if (index == -1) return null;
         var latestEntry = await _cache.GetLatestEntry(cancellationToken);
         var value = latestEntry.ExchangePrices[index];
         if (!value.HasValue) return null;
@@ -34,10 +31,7 @@ public class ExchangeTrackerApi : IExchangeTrackerApi
         CancellationToken cancellationToken)
     {
         var index = GetIndex(resourceId);
-        if (index== -1)
-        {
-            return null;
-        }
+        if (index == -1) return null;
         var entries = await _cache.GetEntries(cancellationToken);
         var avg = entries.Average(x => x.ExchangePrices[index]);
         return new Price
@@ -50,10 +44,7 @@ public class ExchangeTrackerApi : IExchangeTrackerApi
     public async Task<Price> GetMinPrice(ResourceId resourceId, TimeSpan timeSpan, CancellationToken cancellationToken)
     {
         var index = GetIndex(resourceId);
-        if (index== -1)
-        {
-            return null;
-        }
+        if (index == -1) return null;
         var entries = await _cache.GetEntries(cancellationToken);
         var min = entries.Min(x => x.ExchangePrices[index]);
         return new Price
@@ -66,10 +57,7 @@ public class ExchangeTrackerApi : IExchangeTrackerApi
     public async Task<Price> GetMaxPrice(ResourceId resourceId, TimeSpan timeSpan, CancellationToken cancellationToken)
     {
         var index = GetIndex(resourceId);
-        if (index == -1)
-        {
-            return null;
-        }
+        if (index == -1) return null;
         var entries = await _cache.GetEntries(cancellationToken);
         var max = entries.Max(x => x.ExchangePrices[index]);
         return new Price

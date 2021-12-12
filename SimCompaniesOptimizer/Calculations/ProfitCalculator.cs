@@ -40,19 +40,23 @@ public class ProfitCalculator
         {
             resourceStatistic.AveragedSourcingCost = await CalculateAvgSourcingCostRecursive(resourceId,
                 productionStatistic,
+                companyParameters.InputResourcesFromContracts,
                 cancellationToken);
 
             var resource = await _simCompaniesApi.GetResourceAsync(resourceId, cancellationToken);
-            var bruttoIncome = resourceStatistic.UnitsToSell * resource.CurrentExchangePrice;
-            var exchangeFee = bruttoIncome * SimCompaniesConstants.ExchangeFee;
-            resourceStatistic.RevenuePerHour = bruttoIncome;
-            resourceStatistic.ExpensePerHour = resourceStatistic.AveragedSourcingCost * resourceStatistic.TotalUnits +
-                                               exchangeFee + resourceStatistic.UnitsToSell * (resource.Transportation *
-                                                   transportationResource.CurrentExchangePrice);
+            var grossIncome = resourceStatistic.UnitsToSellPerHour * resource.CurrentExchangePrice;
+            var exchangeFee = grossIncome * SimCompaniesConstants.ExchangeFee;
+            resourceStatistic.RevenuePerHour = grossIncome;
+            resourceStatistic.ExpensePerHour = exchangeFee + resourceStatistic.UnitsToSellPerHour *
+                (resourceStatistic.AveragedSourcingCost +
+                 +(resource.Transportation *
+                   transportationResource.CurrentExchangePrice));
 
             totalProfitPerHour += resourceStatistic.ProfitPerHour;
             totalRevenuePerHour += resourceStatistic.RevenuePerHour;
             totalExpensesPerHour += resourceStatistic.ExpensePerHour;
+
+            // the avg cost of the products to sell includes all previous expenses for the product. so you cannot accumulate those 
         }
 
         productionStatistic.TotalProfitPerHour = totalProfitPerHour;
@@ -65,7 +69,7 @@ public class ProfitCalculator
     }
 
     private async Task<double> CalculateAvgSourcingCostRecursive(ResourceId resourceId,
-        ProductionStatistic productionStatistic, CancellationToken cancellationToken)
+        ProductionStatistic productionStatistic, bool inputResourceFromContracts, CancellationToken cancellationToken)
     {
         var resource = await _simCompaniesApi.GetResourceAsync(resourceId, cancellationToken);
 
@@ -81,8 +85,9 @@ public class ProfitCalculator
             if (!productionStatistic.ResourceStatistic.ContainsKey(inputResource.Resource.Id)) continue;
             var inputResourceId = inputResource.Resource.Id;
             var avgCost = await CalculateAvgSourcingCostRecursive(inputResourceId, productionStatistic,
+                inputResourceFromContracts,
                 cancellationToken);
-            productionStatistic.ResourceStatistic.TryAdd(inputResourceId, new ResourceStatistic()
+            productionStatistic.ResourceStatistic.TryAdd(inputResourceId, new ResourceStatistic
             {
                 AveragedSourcingCost = avgCost
             });
@@ -90,17 +95,18 @@ public class ProfitCalculator
         }
 
         var resourceStatistic = productionStatistic.ResourceStatistic[resourceId];
-        totalSourcingCost += resourceStatistic.AmountBought * resource.CurrentExchangePrice;
-        totalSourcingCost += resourceStatistic.AmountProduced *
+        totalSourcingCost += resourceStatistic.AmountBoughtPerHour * resource.CurrentExchangePrice *
+                             (inputResourceFromContracts ? 1 - SimCompaniesConstants.ExchangeFee : 1);
+        totalSourcingCost += resourceStatistic.AmountProducedPerHour *
                              (resource.CalcUnitAdminCost(productionStatistic.CompanyParameters.AdminOverhead,
                                   productionStatistic.CompanyParameters.ProductionSpeed) +
                               resource.CalcUnitWorkerCost(productionStatistic.CompanyParameters.ProductionSpeed) +
                               inputItemSourcingCost);
 
-        return totalSourcingCost / resourceStatistic.TotalUnits;
+        return totalSourcingCost / resourceStatistic.TotalUnitsPerHour;
     }
 
-    public async Task SimulateResourceProductionRecursive(ResourceId resourceId,
+    private async Task SimulateResourceProductionRecursive(ResourceId resourceId,
         CompanyParameters companyParameters, ProductionStatistic productionStatistic,
         CancellationToken cancellationToken)
     {
@@ -119,55 +125,29 @@ public class ProfitCalculator
         if (productionStatistic.ResourceStatistic.ContainsKey(resourceId))
             resourceStatistic = productionStatistic.ResourceStatistic[resourceId];
 
-        double sourcingCost = 0;
-
         // If we have a building producing desired resource, calc amount
         if (companyParameters.BuildingsPerResource.ContainsKey(resourceId))
         {
             var buildingLevel = companyParameters.BuildingsPerResource[resourceId];
             var totalUnitsProducedPerHour = resource.ProducedAnHour * buildingLevel;
+            resourceStatistic.ProductionBuildingLevels = buildingLevel;
 
-            if (resourceStatistic.AmountProduced == 0 && resourceStatistic.UnusedUnits == 0)
+            if (resourceStatistic.AmountProducedPerHour == 0 && resourceStatistic.UnusedUnits == 0)
             {
-                resourceStatistic.AmountProduced += totalUnitsProducedPerHour;
+                resourceStatistic.AmountProducedPerHour += totalUnitsProducedPerHour;
                 resourceStatistic.UnusedUnits += totalUnitsProducedPerHour;
-            }
 
-            foreach (var inputResource in resource.ProducedFrom)
-            {
-                var inputResourceStatistic = productionStatistic.ResourceStatistic[inputResource.Resource.Id];
-                var inputUnitsNeededPerHour = inputResource.Amount * resource.ProducedAnHour;
 
-                inputResourceStatistic.UnusedUnits -= inputUnitsNeededPerHour;
+                foreach (var inputResource in resource.ProducedFrom)
+                {
+                    var inputResourceStatistic = productionStatistic.ResourceStatistic[inputResource.Resource.Id];
+                    var inputUnitsNeededPerHour = inputResource.Amount * totalUnitsProducedPerHour;
+
+                    inputResourceStatistic.UnusedUnits -= inputUnitsNeededPerHour;
+                }
             }
         }
-        
+
         productionStatistic.ResourceStatistic[resourceId] = resourceStatistic;
     }
-
-    // /// <summary>
-    // /// Calculates the profits for a resource if buying input items from market only. For one hour and a single level 1 building.
-    // /// </summary>
-    // /// <param name="resourceId"></param>
-    // /// <param name="companyParameters"></param>
-    // /// <param name="cancellationToken"></param>
-    // /// <returns></returns>
-    // public async Task<ResourceStatistic> CalculateProfitOfResourceByMarket(ResourceId resourceId, CompanyParameters companyParameters, CancellationToken cancellationToken)
-    // {
-    //     var resource = await _simCompaniesApi.GetResourceAsync(resourceId, cancellationToken);
-    //     var transportationResource = await _simCompaniesApi.GetResourceAsync(ResourceId.Transport, cancellationToken);
-    //     double sourcingCost = 0;
-    //     var exchangePrice = resource.CurrentExchangePrice;
-    //
-    //     foreach (var inputResource in resource.ProducedFrom)
-    //     {
-    //         var res = await _simCompaniesApi.GetResourceAsync(inputResource.Resource.Id, cancellationToken);
-    //         sourcingCost += res.CurrentExchangePrice * inputResource.Amount;
-    //     }
-    //
-    //     var profitPerUnit = exchangePrice - (exchangePrice * SimCompaniesConstants.ExchangeFee) -
-    //                         resource.Transportation * transportationResource.CurrentExchangePrice - sourcingCost - resource.CalcUnitAdminCost(companyParameters.AdminOverhead, companyParameters.ProductionSpeed) - resource.CalcUnitWorkerCost(companyParameters.ProductionSpeed);
-    //
-    //     return profitPerUnit * resource.ProducedAnHour;
-    // }
 }

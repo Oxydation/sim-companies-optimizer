@@ -11,6 +11,8 @@ public class CompanyParameters
 
     public Dictionary<ResourceId, int> BuildingsPerResource { get; set; } = new();
 
+    public bool InputResourcesFromContracts { get; set; }
+
     public int GetTotalBuildings()
     {
         return BuildingsPerResource.Sum(x => x.Value);

@@ -2,7 +2,7 @@
 
 public static class NotSellableResourceIds
 {
-    public static HashSet<ResourceId> NotSellableResources => new HashSet<ResourceId>()
+    public static HashSet<ResourceId> NotSellableResources => new()
     {
         ResourceId.SubOrbitalRocket,
         ResourceId.SubOrbital2ndStage,
@@ -15,6 +15,7 @@ public static class NotSellableResourceIds
         ResourceId.Satellite
     };
 }
+
 public enum ResourceId
 {
     Power = 1,
