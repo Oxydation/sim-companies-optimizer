@@ -13,6 +13,8 @@ public class CompanyParameters
 
     public bool InputResourcesFromContracts { get; set; }
 
+    public int MaxBuildingPlaces { get; set; }
+
     public int GetTotalBuildings()
     {
         return BuildingsPerResource.Sum(x => x.Value);

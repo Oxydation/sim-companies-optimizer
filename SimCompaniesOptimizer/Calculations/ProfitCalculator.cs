@@ -4,7 +4,7 @@ using SimCompaniesOptimizer.Models;
 
 namespace SimCompaniesOptimizer.Calculations;
 
-public class ProfitCalculator
+public class ProfitCalculator : IProfitCalculator
 {
     private readonly ISimCompaniesApi _simCompaniesApi;
 
@@ -29,7 +29,6 @@ public class ProfitCalculator
         foreach (var (resourceId, buildingCount) in companyParameters.BuildingsPerResource)
             await SimulateResourceProductionRecursive(resourceId, companyParameters, productionStatistic,
                 cancellationToken);
-
 
         double totalProfitPerHour = 0;
         double totalRevenuePerHour = 0;
@@ -73,10 +72,6 @@ public class ProfitCalculator
     {
         var resource = await _simCompaniesApi.GetResourceAsync(resourceId, cancellationToken);
 
-        if (resourceId == ResourceId.IonDrive)
-        {
-        }
-
         double totalSourcingCost = 0;
         var inputItemSourcingCost = 0.0;
         foreach (var inputResource in resource.ProducedFrom)
@@ -103,7 +98,10 @@ public class ProfitCalculator
                               resource.CalcUnitWorkerCost(productionStatistic.CompanyParameters.ProductionSpeed) +
                               inputItemSourcingCost);
 
-        return totalSourcingCost / resourceStatistic.TotalUnitsPerHour;
+        var averageCalculation = totalSourcingCost / resourceStatistic.TotalUnitsPerHour;
+        if (double.IsNaN(averageCalculation)) return 0;
+
+        return averageCalculation;
     }
 
     private async Task SimulateResourceProductionRecursive(ResourceId resourceId,
