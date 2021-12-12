@@ -17,4 +17,6 @@ public interface IExchangeTrackerCache
         return values.IndexOf(resourceId);
         // return Array.IndexOf(, resourceId);
     }
+
+    Task RefreshCache(CancellationToken cancellationToken);
 }

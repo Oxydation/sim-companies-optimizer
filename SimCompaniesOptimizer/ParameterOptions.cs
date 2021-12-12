@@ -30,4 +30,10 @@ public class ParameterOptions
             "The seed to use for the random values. Default is Environment.TickCount.",
         Required = false)]
     public int? Seed { get; set; }
+    
+    [Option('e', "exsync",
+        HelpText =
+            "Forces to sync the exchange tracker with current values.",
+        Required = false)]
+    public bool ForceExchangeTrackerSync { get; set; }
 }

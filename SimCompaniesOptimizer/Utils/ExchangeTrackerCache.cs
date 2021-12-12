@@ -15,6 +15,17 @@ public class ExchangeTrackerCache : IExchangeTrackerCache
         _exchangeTrackerReader = exchangeTrackerReader;
     }
 
+    public async Task RefreshCache(CancellationToken cancellationToken)
+    { 
+        await using var dbContext = new SimCompaniesDbContext();
+        if (dbContext.ExchangeTrackerEntries.Any())
+        {
+            dbContext.ExchangeTrackerEntries.RemoveRange(dbContext.ExchangeTrackerEntries.ToList());
+            await dbContext.SaveChangesAsync(cancellationToken);
+            _cache.Clear();
+        }
+    }
+
     public async Task<IEnumerable<ExchangeTrackerEntry>> GetEntries(CancellationToken cancellationToken)
     {
         if (_cache.Count > 0) return _cache;

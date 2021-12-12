@@ -44,6 +44,7 @@ static async void RunOptions(ParameterOptions options)
 
     var simCompaniesApi = serviceProvider.GetService<ISimCompaniesApi>();
     var profitOptimizer = serviceProvider.GetService<IProfitOptimizer>();
+    var exchangeTrackerCache = serviceProvider.GetService<IExchangeTrackerCache>();
 
 //await simCompaniesApi.GetAllResourcesAsync(CancellationToken.None);
 //await simCompaniesApi.UpdateExchangePriceOfAllResources(CancellationToken.None);
@@ -60,6 +61,12 @@ static async void RunOptions(ParameterOptions options)
     //     ResourceId.GoldenBars, ResourceId.GoldOre, ResourceId.IonDrive
     // }
 
+    if (options.ForceExchangeTrackerSync)
+    {
+        await exchangeTrackerCache.RefreshCache(CancellationToken.None);
+        await simCompaniesApi.UpdateExchangePriceOfAllResources(CancellationToken.None);
+    }
+    
     var restarts = (options.Restarts ?? 1);
     for (var run = 0; run < restarts; run++)
     {

@@ -11,9 +11,9 @@ public class ExchangeTrackerReader : IExchangeTrackerReader
     public async Task<IEnumerable<ExchangeTrackerEntry>> GetAllEntriesFromExchangeApiAsync(
         CancellationToken cancellationToken)
     {
-        var uri = $"{SimCompaniesConstants.ExchangeApiCsvDownloadUrl}";
+        const string uri = $"{SimCompaniesConstants.ExchangeApiCsvDownloadUrl}";
         using var client = new HttpClient();
-        var getResponse = await client.GetAsync(uri, cancellationToken);
+        var getResponse = client.GetAsync(uri, cancellationToken).Result;
         getResponse.EnsureSuccessStatusCode();
         var contentStream = await getResponse.Content.ReadAsStreamAsync(cancellationToken);
         using var streamReader = new StreamReader(contentStream);
