@@ -42,14 +42,15 @@ public class ProfitCalculator : IProfitCalculator
             profits.Add(new Profit
             {
                 Timestamp = entry.Timestamp.Value,
-                Value = productionStatistic.TotalProfitPerHour
+                Value = productionStatistic.TotalProfitPerHour,
+                ProductionStatistic = productionStatistic
             });
         });
 
         result.Profits = profits.ToList();
-        result.AvgProfit = result.Profits.Average(x => x.Value);
-        result.MaxProfit = result.Profits.Max(x => x.Value);
-        result.MinProfit = result.Profits.Min(x => x.Value);
+        result.AvgProfitPerHour = result.Profits.Average(x => x.Value);
+        result.MaxProfitPerHour = result.Profits.Max(x => x.Value);
+        result.MinProfitPerHour = result.Profits.Min(x => x.Value);
         result.CountIterationsWithLoss = result.Profits.Count(x => x.Value <= 0);
         result.CountIterationsWithProfit = result.Profits.Count(x => x.Value > 0);
         result.LossPercentage = result.CountIterationsWithLoss * 1.0 / result.Profits.Count * 100;
@@ -109,6 +110,14 @@ public class ProfitCalculator : IProfitCalculator
             totalExpensesPerHour += resourceStatistic.ExpensePerHour;
 
             // the avg cost of the products to sell includes all previous expenses for the product. so you cannot accumulate those 
+        }
+
+        foreach (var (resourceId, resourceStatistic) in productionStatistic.ResourceStatistic)
+        {
+            if (resourceStatistic.ProfitPerHour > 0)
+            {
+                resourceStatistic.PercentageOfProfit = resourceStatistic.ProfitPerHour / totalProfitPerHour;
+            }
         }
 
         productionStatistic.TotalProfitPerHour = totalProfitPerHour;

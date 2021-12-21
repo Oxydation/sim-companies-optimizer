@@ -67,10 +67,10 @@ public class ProfitOptimizer : IProfitOptimizer
         var stopWatch = new Stopwatch();
         stopWatch.Start();
 
-        double currentMaxProfit = 0;
+        double currentFittestProfit = 0;
         var bestStatistics = new ConcurrentBag<ProductionStatistic>();
 
-        Parallel.For(0, simulationConfiguration.Generations, async (i, state) =>
+        Parallel.For(0, simulationConfiguration.Generations, new ParallelOptions(){MaxDegreeOfParallelism = 1},async (i, state) =>
         {
             var companyParam = new CompanyParameters
             {
@@ -86,38 +86,53 @@ public class ProfitOptimizer : IProfitOptimizer
             };
             if (companyParam.BuildingsPerResource.Count == 0) return;
 
-            var result =
-                await _profitCalculator.CalculateProductionStatisticForCompany(companyParam, cancellationToken);
-            if (!(result.TotalProfitPerHour >= currentMaxProfit)) return;
+            ProductionStatistic? result;
+            ProfitHistory? profitHistory;
+            
+            switch (simulationConfiguration.OptimizationObjective)
+            {
+                case OptimizationObjective.MaxAvgOverLastXDays:
+                    profitHistory = await _profitCalculator.CalculateProfitHistoryForCompany(companyParam, simulationConfiguration.DaysIntoPast,  simulationConfiguration.StepInterval,
+                        cancellationToken);
+                    if (!(profitHistory.AvgProfitPerHour >= currentFittestProfit)) return;
+                    currentFittestProfit = profitHistory.AvgProfitPerHour;
+                    result = await _profitCalculator.CalculateProductionStatisticForCompany(companyParam, cancellationToken);
+                    result.ProfitResultsLastTenDays = profitHistory;
+                    break;
+                case OptimizationObjective.MaxForLatestMarket:
+                    result = await _profitCalculator.CalculateProductionStatisticForCompany(companyParam, cancellationToken);
+                    if (!(result.TotalProfitPerHour >= currentFittestProfit)) return;
+                    currentFittestProfit = result.TotalProfitPerHour;
+                    profitHistory = await _profitCalculator.CalculateProfitHistoryForCompany(companyParam,  simulationConfiguration.DaysIntoPast, simulationConfiguration.StepInterval,
+                        cancellationToken);
+                    result.ProfitResultsLastTenDays = profitHistory;
+                    break;
+                case OptimizationObjective.MinLossPercentageOverLastXDays:
+                    profitHistory = await _profitCalculator.CalculateProfitHistoryForCompany(companyParam,  simulationConfiguration.DaysIntoPast, simulationConfiguration.StepInterval,
+                        cancellationToken);
+                    if (!(profitHistory.LossPercentage < currentFittestProfit)) return;
+                    currentFittestProfit = profitHistory.AvgProfitPerHour;
+                    result =
+                        await _profitCalculator.CalculateProductionStatisticForCompany(companyParam, cancellationToken);
+                    result.ProfitResultsLastTenDays = profitHistory;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(simulationConfiguration.OptimizationObjective), simulationConfiguration.OptimizationObjective, null);
+            }
 
-
-            currentMaxProfit = result.TotalProfitPerHour;
             bestStatistics.Add(result);
             Console.WriteLine(
-                $"Iteration w. max. profit {result.CalculationDuration}. {result.TotalProfitPerHour:F0} /h"); //| AVG: {result.ProfitResultsLastTenDays?.AvgProfit:F1} | MAX {result.ProfitResultsLastTenDays?.MaxProfit:F1} | MIN {result.ProfitResultsLastTenDays?.MinProfit:F1}");
+                $"Iteration w. optimal profit {result.CalculationDuration}. Last profit {result.TotalProfitPerHour:F0} /h | AVG 10 Days: {result.ProfitResultsLastTenDays?.AvgProfitPerHour:F1} | Loss: {result.ProfitResultsLastTenDays.LossPercentage:F3} % "); //| AVG: {result.ProfitResultsLastTenDays?.AvgProfit:F1} | MAX {result.ProfitResultsLastTenDays?.MaxProfit:F1} | MIN {result.ProfitResultsLastTenDays?.MinProfit:F1}");
         });
 
         var bestStatisticResult = bestStatistics.ToList();
-        // if (simulationConfiguration.CalculateProfitHistoryForAllNewMaxProfits)
-        // {
-        //     foreach (var productionStatistic in bestStatisticResult)
-        //     {     var profitResultsForTheLastTenDays =
-        //             await _profitCalculator.CalculateProductionStatisticForCompany(productionStatistic.CompanyParameters,
-        //                 TimeSpan.FromDays(5), TimeSpan.FromMinutes(30),
-        //                 cancellationToken);
-        //         productionStatistic.ProfitResultsLastTenDays = profitResultsForTheLastTenDays;
-        //         Console.WriteLine(
-        //             $"Iteration w. max. profit {productionStatistic.CalculationDuration}. {productionStatistic.TotalProfitPerHour:F0} /h | AVG: {productionStatistic.ProfitResultsLastTenDays?.AvgProfit:F1} | MAX {productionStatistic.ProfitResultsLastTenDays?.MaxProfit:F1} | MIN {productionStatistic.ProfitResultsLastTenDays?.MinProfit:F1}");
-        //
-        //     }
-        //
-        // }
 
         stopWatch.Stop();
         Console.WriteLine($"Total duration for {simulationConfiguration.Generations} generations: {stopWatch.Elapsed}");
         return bestStatisticResult;
     }
 
+    
     private static Dictionary<ResourceId, int> GenerateRandomResourceBuildingLevels(IList<ResourceId> resourceIds,
         Random random, int maxBuildingLevel, int maxBuildings)
     {
@@ -145,4 +160,12 @@ public class ProfitOptimizer : IProfitOptimizer
 
         return resourceBuildingLevels;
     }
+}
+
+public enum OptimizationObjective
+{
+    MaxAvgOverLastXDays,
+    MaxForLatestMarket,
+    MinLossPercentageOverLastXDays,
+    MaxAvgProfitOverLastXDaysAndMinLossPercentage
 }

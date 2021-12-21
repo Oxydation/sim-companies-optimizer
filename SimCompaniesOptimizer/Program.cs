@@ -13,6 +13,7 @@ using SimCompaniesOptimizer;
 using SimCompaniesOptimizer.APIs;
 using SimCompaniesOptimizer.Calculations;
 using SimCompaniesOptimizer.Database;
+using SimCompaniesOptimizer.Extensions;
 using SimCompaniesOptimizer.Interfaces;
 using SimCompaniesOptimizer.Models;
 using SimCompaniesOptimizer.Models.ProfitCalculation;
@@ -67,7 +68,7 @@ static async void RunOptions(ParameterOptions options)
     }
 
     var restarts = options.Restarts ?? 1;
-    var results = new ConcurrentBag<ProductionStatistic>();
+    var optimizationRunsResults = new ConcurrentBag<ProductionStatistic>();
     var stopWatch = new Stopwatch();
     stopWatch.Start();
     var simulationParams = new SimulationConfiguration
@@ -78,7 +79,8 @@ static async void RunOptions(ParameterOptions options)
         ContractSelection = options.UseContracts ? ContractSelection.Enable : ContractSelection.Disable,
         BuildingLevelLimit = options.MaxBuildingLevel,
         MaxBuildingPlaces = options.MaxBuildingPlaces,
-        CalculateProfitHistoryForAllNewMaxProfits = true
+        CalculateProfitHistoryForAllNewMaxProfits = true,
+        OptimizationObjective = OptimizationObjective.MaxAvgOverLastXDays
     };
 
     Parallel.For(0, restarts, new ParallelOptions { MaxDegreeOfParallelism = options.CountConcurrentRuns ?? 1 },
@@ -88,35 +90,25 @@ static async void RunOptions(ParameterOptions options)
 
             var bestResults = await profitOptimizer.OptimalBuildingsRandom(
                 options.Resources.Select(r => (ResourceId)r).ToList(), simulationParams, CancellationToken.None);
-
-            var bestOfRun = bestResults.MaxBy(b => b.TotalProfitPerHour);
-
-            if (simulationParams.CalculateProfitHistoryForAllNewMaxProfits)
-            {
-                var profitResultsForTheLastTenDays =
-                    await profitCalculator.CalculateProfitHistoryForCompany(bestOfRun.CompanyParameters,
-                        TimeSpan.FromDays(5), TimeSpan.FromMinutes(30),
-                        CancellationToken.None);
-                bestOfRun.ProfitResultsLastTenDays = profitResultsForTheLastTenDays;
-            }
-
-            results.Add(bestOfRun);
+            
+            var bestOfRun = bestResults.MaxByOptimizationObjective(simulationParams.OptimizationObjective);
+            optimizationRunsResults.Add(bestOfRun);
             bestOfRun?.PrintToConsole(false);
             Console.WriteLine($"Optimization run {run + 1} finished.");
         });
 
-    var veryBest = results.MaxBy(b => b.TotalProfitPerHour);
+    var veryBest = optimizationRunsResults.MaxByOptimizationObjective(simulationParams.OptimizationObjective);
     stopWatch.Stop();
     Console.WriteLine(
         $"{restarts} optimization runs with {options.Generations} generations finished within {stopWatch.Elapsed}. Total best profit per hour {veryBest.TotalProfitPerHour}");
     Console.WriteLine("Profit for best result over the last ten days.");
     Console.WriteLine(
-        $"AVG: {veryBest.ProfitResultsLastTenDays?.AvgProfit:F1} | MAX {veryBest.ProfitResultsLastTenDays?.MaxProfit:F1} | MIN {veryBest.ProfitResultsLastTenDays?.MinProfit:F1}");
+        $"AVG: {veryBest.ProfitResultsLastTenDays?.AvgProfitPerHour:F1} | MAX {veryBest.ProfitResultsLastTenDays?.MaxProfitPerHour:F1} | MIN {veryBest.ProfitResultsLastTenDays?.MinProfitPerHour:F1}");
 
-    var orderedResults = results.OrderByDescending(r => r.TotalProfitPerHour).ToList();
+    var orderedResults = optimizationRunsResults.OrderByOptimizationObjective(simulationParams.OptimizationObjective).ToList();
 
     await using var fileStream =
-        new StreamWriter($"{DateTime.Now.Ticks}_bestResults_{veryBest?.TotalProfitPerHour:F0}.json");
+        new StreamWriter($"{DateTime.Now.Ticks}_{simulationParams.OptimizationObjective}_{veryBest?.TotalProfitPerHour:F0}.json");
     var serializedResult = JsonSerializer.Serialize(orderedResults);
     fileStream.Write(serializedResult);
     fileStream.Close();

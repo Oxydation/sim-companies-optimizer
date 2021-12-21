@@ -43,4 +43,6 @@ public class ResourceStatistic
     public double ExpensePerHour { get; set; }
 
     public double ExchangePrice { get; set; }
+    
+    public double PercentageOfProfit { get; set; }
 }

@@ -17,8 +17,12 @@ public class ExchangeTrackerEntry
 
     public double? GetPriceOfResource(ResourceId resourceId)
     {
-        if (ExchangePrices.Count == 0) return null;
-        return ExchangePrices[GetIndexOfResourceId(resourceId)];
+        if (GetIndexOfResourceId(resourceId) >= ExchangePrices.Count || GetIndexOfResourceId(resourceId)  < 0)
+        {
+            Console.WriteLine("OOOHHH");
+        }
+
+        return ExchangePrices.Count == 0 ? null : ExchangePrices[GetIndexOfResourceId(resourceId)];
     }
 
     public static int GetIndexOfResourceId(ResourceId resourceId)

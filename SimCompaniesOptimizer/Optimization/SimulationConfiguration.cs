@@ -13,4 +13,8 @@ public class SimulationConfiguration
     public int MaxBuildingPlaces { get; set; } = 12;
     public int? Seed { get; set; }
     public bool CalculateProfitHistoryForAllNewMaxProfits { get; set; }
+    public TimeSpan DaysIntoPast { get; set; }
+    
+    public TimeSpan StepInterval { get; set; }
+    public OptimizationObjective OptimizationObjective { get; set; }
 }

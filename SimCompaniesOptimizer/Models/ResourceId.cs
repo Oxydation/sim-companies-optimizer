@@ -12,7 +12,8 @@ public static class NotSellableResourceIds
         ResourceId.JumboJet,
         ResourceId.LuxuryJet,
         ResourceId.SingleEnginePlane,
-        ResourceId.Satellite
+        ResourceId.Satellite,
+        ResourceId.AerospaceResearch
     };
 }
 

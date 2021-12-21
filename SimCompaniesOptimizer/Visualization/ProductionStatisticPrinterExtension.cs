@@ -19,7 +19,7 @@ public static class ProductionStatisticPrinterExtension
 
         Console.WriteLine("Profit for best result over the last ten days.");
         Console.WriteLine(
-            $"AVG: {productionStatistic.ProfitResultsLastTenDays?.AvgProfit:F1} | MAX {productionStatistic.ProfitResultsLastTenDays?.MaxProfit:F1} | MIN {productionStatistic.ProfitResultsLastTenDays?.MinProfit:F1} | Loss {productionStatistic.ProfitResultsLastTenDays?.LossPercentage} %");
+            $"AVG: {productionStatistic.ProfitResultsLastTenDays?.AvgProfitPerHour:F1} | MAX {productionStatistic.ProfitResultsLastTenDays?.MaxProfitPerHour:F1} | MIN {productionStatistic.ProfitResultsLastTenDays?.MinProfitPerHour:F1} | Loss {productionStatistic.ProfitResultsLastTenDays?.LossPercentage} %");
 
         if (listResourceDetails)
         {
