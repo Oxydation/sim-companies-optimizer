@@ -1,4 +1,6 @@
-﻿namespace SimCompaniesOptimizer.Models;
+﻿using SimCompaniesOptimizer.Optimization;
+
+namespace SimCompaniesOptimizer.Models;
 
 public class CompanyParameters
 {
@@ -15,6 +17,8 @@ public class CompanyParameters
 
     public int MaxBuildingPlaces { get; set; }
     public int? Seed { get; set; }
+
+    public SimulationConfiguration SimulationParameters { get; set; }
 
     public int GetTotalBuildings()
     {

@@ -37,4 +37,16 @@ public class ParameterOptions
             "Forces to sync the exchange tracker with current values.",
         Required = false)]
     public bool ForceExchangeTrackerSync { get; set; }
+
+    [Option('q', "cruns",
+        HelpText =
+            "Amount of runs in parallel. Default to 1 (sequential restarts).",
+        Required = false)]
+    public int? CountConcurrentRuns { get; set; } = 1;
+
+    [Option('c', "contracts",
+        HelpText =
+            "If set, contracts are used to calc input resource costs (Exc. * 0.97).",
+        Required = false)]
+    public bool UseContracts { get; set; }
 }

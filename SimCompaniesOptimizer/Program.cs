@@ -15,6 +15,7 @@ using SimCompaniesOptimizer.Calculations;
 using SimCompaniesOptimizer.Database;
 using SimCompaniesOptimizer.Interfaces;
 using SimCompaniesOptimizer.Models;
+using SimCompaniesOptimizer.Models.ProfitCalculation;
 using SimCompaniesOptimizer.Optimization;
 using SimCompaniesOptimizer.Utils;
 using SimCompaniesOptimizer.Visualization;
@@ -46,6 +47,7 @@ static async void RunOptions(ParameterOptions options)
 
     var simCompaniesApi = serviceProvider.GetService<ISimCompaniesApi>();
     var profitOptimizer = serviceProvider.GetService<IProfitOptimizer>();
+    var profitCalculator = serviceProvider.GetService<IProfitCalculator>();
     var exchangeTrackerCache = serviceProvider.GetService<IExchangeTrackerCache>();
 
 //await simCompaniesApi.GetAllResourcesAsync(CancellationToken.None);
@@ -73,23 +75,49 @@ static async void RunOptions(ParameterOptions options)
     var results = new ConcurrentBag<ProductionStatistic>();
     var stopWatch = new Stopwatch();
     stopWatch.Start();
-    Parallel.For(0, restarts, new ParallelOptions { MaxDegreeOfParallelism = 1 }, async (run, state) =>
+    var simulationParams = new SimulationConfiguration
     {
-        Console.WriteLine($"Optimization run {run} of {restarts}");
+        Generations = options.Generations,
+        Seed = options.Seed,
+        ContractSelection = options.UseContracts ? ContractSelection.Enable : ContractSelection.Disable,
+        BuildingLevelLimit = options.MaxBuildingLevel,
+        MaxBuildingPlaces = options.MaxBuildingPlaces,
+        CalculateProfitHistoryForAllNewMaxProfits = true,
+    };
 
-        var bestResults = await profitOptimizer.OptimalBuildingsForGivenResourcesRandom(
-            options.Resources.Select(r => (ResourceId)r), options.Generations, CancellationToken.None,
-            maxBuildingPlaces: options.MaxBuildingPlaces, seed: options.Seed);
-        var bestOfRun = bestResults.MaxBy(b => b.TotalProfitPerHour);
-        results.Add(bestOfRun);
-        bestOfRun?.PrintToConsole(false);
-        Console.WriteLine($"Optimization run {run} finished.");
-    });
+    Parallel.For(0, restarts, new ParallelOptions { MaxDegreeOfParallelism = options.CountConcurrentRuns ?? 1 },
+        async (run, state) =>
+        {
+            Console.WriteLine($"Optimization run {run + 1} of {restarts}");
+
+            var bestResults = await profitOptimizer.OptimalBuildingsForGivenResourcesRandom(
+                options.Resources.Select(r => (ResourceId)r).ToList(), simulationParams, CancellationToken.None);
+
+            var bestOfRun = bestResults.MaxBy(b => b.TotalProfitPerHour);
+
+            if (simulationParams.CalculateProfitHistoryForAllNewMaxProfits)
+            {
+                
+            var profitResultsForTheLastTenDays =
+                await profitCalculator.CalculateProductionStatisticForCompany(bestOfRun.CompanyParameters,
+                    TimeSpan.FromDays(5), TimeSpan.FromMinutes(30),
+                    CancellationToken.None);
+            bestOfRun.ProfitResultsLastTenDays = profitResultsForTheLastTenDays;
+            
+            }
+            
+            results.Add(bestOfRun);
+            bestOfRun?.PrintToConsole(false);
+            Console.WriteLine($"Optimization run {run + 1} finished.");
+        });
 
     var veryBest = results.MaxBy(b => b.TotalProfitPerHour);
     stopWatch.Stop();
     Console.WriteLine(
         $"{restarts} optimization runs with {options.Generations} generations finished within {stopWatch.Elapsed}. Total best profit per hour {veryBest.TotalProfitPerHour}");
+    Console.WriteLine($"Profit for best result over the last ten days.");
+    Console.WriteLine($"AVG: {veryBest.ProfitResultsLastTenDays?.AvgProfit:F1} | MAX {veryBest.ProfitResultsLastTenDays?.MaxProfit:F1} | MIN {veryBest.ProfitResultsLastTenDays?.MinProfit:F1}");
+
     var orderedResults = results.OrderByDescending(r => r.TotalProfitPerHour).ToList();
 
     await using var fileStream =

@@ -2,7 +2,7 @@
 
 public static class NotSellableResourceIds
 {
-    public static HashSet<ResourceId> NotSellableResources => new()
+    public static readonly HashSet<ResourceId> NotSellableResources = new()
     {
         ResourceId.SubOrbitalRocket,
         ResourceId.SubOrbital2ndStage,

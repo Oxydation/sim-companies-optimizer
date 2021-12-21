@@ -4,11 +4,14 @@ using SimCompaniesOptimizer.Calculations;
 using SimCompaniesOptimizer.Extensions;
 using SimCompaniesOptimizer.Interfaces;
 using SimCompaniesOptimizer.Models;
+using SimCompaniesOptimizer.Models.ProfitCalculation;
 
 namespace SimCompaniesOptimizer.Optimization;
 
 public class ProfitOptimizer : IProfitOptimizer
 {
+    private static readonly Array ResourceEnumValues = Enum.GetValues(typeof(ResourceId));
+    private static readonly ThreadLocal<Random> Random = new(() => new Random());
     private readonly IProfitCalculator _profitCalculator;
 
     public ProfitOptimizer(IProfitCalculator profitCalculator)
@@ -56,90 +59,93 @@ public class ProfitOptimizer : IProfitOptimizer
     }
 
     public async Task<List<ProductionStatistic>> OptimalBuildingsForGivenResourcesRandom(
-        IEnumerable<ResourceId> resources,
-        int generations, CancellationToken cancellationToken,
-        int buildingLevelLimit = 30,
-        int maxBuildingPlaces = 12,
-        int? seed = null)
+        IList<ResourceId> resources, SimulationConfiguration simulationConfiguration,
+        CancellationToken cancellationToken)
     {
-        var usedSeed = seed ?? Environment.TickCount;
-        var random = new Random(usedSeed);
+        var usedSeed = simulationConfiguration.Seed ?? Environment.TickCount;
+        //var random = new Random(usedSeed);
+
 
         var stopWatch = new Stopwatch();
         stopWatch.Start();
 
         double currentMaxProfit = 0;
-        var bestProductionStatistic = new ProductionStatistic();
         var bestStatistics = new ConcurrentBag<ProductionStatistic>();
 
-        // var pregeneratedCompanyParameters = new ConcurrentBag<CompanyParameters>();
-        // Parallel.For(0, generations, (i, state) =>
-        // {
-        //     var companyParams = new CompanyParameters
-        //     {
-        //         CooOverheadReduction = 7,
-        //         ProductionSpeed = 1.06,
-        //         InputResourcesFromContracts = true,
-        //         MaxBuildingPlaces = maxBuildingPlaces,
-        //         Seed = usedSeed,
-        //         BuildingsPerResource =
-        //             GenerateRandomResourceBuildingLevels(resources, random, buildingLevelLimit, maxBuildingPlaces)
-        //     };
-        //
-        //     pregeneratedCompanyParameters.Add(companyParams);
-        // });
-
-        // Console.WriteLine($"Pre-generated {generations} company parameters in {stopWatch.Elapsed}.");
-        Parallel.For(0, generations, async (i, state) =>
+        Parallel.For(0, simulationConfiguration.Generations, async (i, state) =>
         {
             var companyParam = new CompanyParameters
             {
+                SimulationParameters = simulationConfiguration,
                 CooOverheadReduction = 7,
                 ProductionSpeed = 1.06,
-                InputResourcesFromContracts = true,
-                MaxBuildingPlaces = maxBuildingPlaces,
+                InputResourcesFromContracts = simulationConfiguration.ContractSelection == ContractSelection.Enable,
+                MaxBuildingPlaces = simulationConfiguration.MaxBuildingPlaces,
                 Seed = usedSeed,
                 BuildingsPerResource =
-                    GenerateRandomResourceBuildingLevels(resources, random, buildingLevelLimit, maxBuildingPlaces)
+                    GenerateRandomResourceBuildingLevels(resources, Random.Value,
+                        simulationConfiguration.BuildingLevelLimit, simulationConfiguration.MaxBuildingPlaces)
             };
+            if (companyParam.BuildingsPerResource.Count == 0) return;
+
             var result =
                 await _profitCalculator.CalculateProductionStatisticForCompany(companyParam, cancellationToken);
-            if (result.TotalProfitPerHour > currentMaxProfit)
-            {
-                currentMaxProfit = result.TotalProfitPerHour;
-                bestProductionStatistic = result;
-                bestStatistics.Add(result);
-                // Console.WriteLine($"New max profit found {currentMaxProfit:F0}");
-                Console.WriteLine(
-                    $"Iteration with new max profit finished in {result.CalculationDuration}. {result.TotalProfitPerHour:F0} profit/h");
-            }
+            if (!(result.TotalProfitPerHour > currentMaxProfit)) return;
+
+           
+            currentMaxProfit = result.TotalProfitPerHour;
+            bestStatistics.Add(result);
+            // Console.WriteLine($"New max profit found {currentMaxProfit:F0}");
+            Console.WriteLine(
+                $"Iteration w. max. profit {result.CalculationDuration}. {result.TotalProfitPerHour:F0} /h"); //| AVG: {result.ProfitResultsLastTenDays?.AvgProfit:F1} | MAX {result.ProfitResultsLastTenDays?.MaxProfit:F1} | MIN {result.ProfitResultsLastTenDays?.MinProfit:F1}");
         });
 
+        var bestStatisticResult = bestStatistics.ToList();
+        // if (simulationConfiguration.CalculateProfitHistoryForAllNewMaxProfits)
+        // {
+        //     foreach (var productionStatistic in bestStatisticResult)
+        //     {     var profitResultsForTheLastTenDays =
+        //             await _profitCalculator.CalculateProductionStatisticForCompany(productionStatistic.CompanyParameters,
+        //                 TimeSpan.FromDays(5), TimeSpan.FromMinutes(30),
+        //                 cancellationToken);
+        //         productionStatistic.ProfitResultsLastTenDays = profitResultsForTheLastTenDays;
+        //         Console.WriteLine(
+        //             $"Iteration w. max. profit {productionStatistic.CalculationDuration}. {productionStatistic.TotalProfitPerHour:F0} /h | AVG: {productionStatistic.ProfitResultsLastTenDays?.AvgProfit:F1} | MAX {productionStatistic.ProfitResultsLastTenDays?.MaxProfit:F1} | MIN {productionStatistic.ProfitResultsLastTenDays?.MinProfit:F1}");
+        //
+        //     }
+        //
+        // }
+
         stopWatch.Stop();
-        Console.WriteLine($"Total duration for {generations} generations: {stopWatch.Elapsed}");
-        return bestStatistics.ToList();
+        Console.WriteLine($"Total duration for {simulationConfiguration.Generations} generations: {stopWatch.Elapsed}");
+        return bestStatisticResult;
     }
 
-    private static Dictionary<ResourceId, int> GenerateRandomResourceBuildingLevels(IEnumerable<ResourceId> resourceIds,
+    private static Dictionary<ResourceId, int> GenerateRandomResourceBuildingLevels(IList<ResourceId> resourceIds,
         Random random, int maxBuildingLevel, int maxBuildings)
     {
-        var enumerable = resourceIds.ToList();
-        if (enumerable.Any())
-            return enumerable.ToDictionary(resourceId => resourceId,
-                _ => (int)(random.NextDouble() * maxBuildingLevel));
+        if (resourceIds.Any())
+            return resourceIds.ToDictionary(resourceId => resourceId,
+                _ => random.Next(maxBuildingLevel + 1));
 
-        var amount = (int)(random.NextDouble() * maxBuildings);
-        var selectedResources = new List<ResourceId>();
+        var amount = random.Next(maxBuildings + 1);
+        if (amount == 0)
+            amount = 1;
+        var resourceBuildingLevels = new Dictionary<ResourceId, int>();
         for (var i = 0; i < amount; i++)
         {
-            var nextResource = random.NextEnum<ResourceId>();
+            var nextResource = random.NextEnum<ResourceId>(ResourceEnumValues);
             if (!NotSellableResourceIds.NotSellableResources.Contains(nextResource))
-                selectedResources.Add(nextResource);
+            {
+                var randomBuildingLevel = random.Next(maxBuildingLevel + 1);
+                if (randomBuildingLevel > 0) resourceBuildingLevels.TryAdd(nextResource, randomBuildingLevel);
+            }
             else
+            {
                 i--;
+            }
         }
 
-        return selectedResources.Distinct()
-            .ToDictionary(resourceId => resourceId, _ => (int)(random.NextDouble() * maxBuildingLevel));
+        return resourceBuildingLevels;
     }
 }

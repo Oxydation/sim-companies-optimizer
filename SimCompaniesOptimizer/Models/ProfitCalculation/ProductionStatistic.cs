@@ -1,4 +1,4 @@
-﻿namespace SimCompaniesOptimizer.Models;
+﻿namespace SimCompaniesOptimizer.Models.ProfitCalculation;
 
 public class ProductionStatistic
 {
@@ -15,6 +15,7 @@ public class ProductionStatistic
     public Dictionary<ResourceId, ResourceStatistic> ResourceStatistic { get; set; } = new();
 
     public TimeSpan CalculationDuration { get; set; }
+    public ProfitHistory ProfitResultsLastTenDays { get; set; }
 }
 
 public class ResourceStatistic

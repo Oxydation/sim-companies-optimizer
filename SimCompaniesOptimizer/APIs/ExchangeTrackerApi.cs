@@ -80,8 +80,8 @@ public class ExchangeTrackerApi : IExchangeTrackerApi
         return priceCard;
     }
 
-    private int GetIndex(ResourceId resourceId)
+    private static int GetIndex(ResourceId resourceId)
     {
-        return _cache.GetIndexOfResourceId(resourceId);
+        return ExchangeTrackerEntry.GetIndexOfResourceId(resourceId);
     }
 }

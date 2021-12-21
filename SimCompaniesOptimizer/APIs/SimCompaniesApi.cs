@@ -40,8 +40,7 @@ public class SimCompaniesApi : ISimCompaniesApi
     public async Task<Resource?> GetResourceAsync(ResourceId resourceId, CancellationToken cancellationToken,
         int quality = 0)
     {
-        var cached = _inMemoryResourceCache.TryGetValue(resourceId, out var memCachedResource);
-        if (cached) return memCachedResource;
+        if (_inMemoryResourceCache.TryGetValue(resourceId, out var memCachedResource)) return memCachedResource;
 
         await using var db = new SimCompaniesDbContext();
         var cachedResource = db.Resources.FirstOrDefault(r => r.Id == resourceId);

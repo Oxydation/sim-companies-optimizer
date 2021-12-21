@@ -1,4 +1,4 @@
-﻿using SimCompaniesOptimizer.Models;
+﻿using SimCompaniesOptimizer.Models.ProfitCalculation;
 
 namespace SimCompaniesOptimizer.Visualization;
 
@@ -16,6 +16,9 @@ public static class ProductionStatisticPrinterExtension
         Console.WriteLine("Profit per Hour | Profit per Day | Profit per Week");
         Console.WriteLine(
             $"{productionStatistic.TotalProfitPerHour:F1} | {productionStatistic.TotalProfitPerDay:F1} | {productionStatistic.TotalProfitPerWeek:F1}");
+
+        Console.WriteLine($"Profit for best result over the last ten days.");
+        Console.WriteLine($"AVG: {productionStatistic.ProfitResultsLastTenDays?.AvgProfit:F1} | MAX {productionStatistic.ProfitResultsLastTenDays?.MaxProfit:F1} | MIN {productionStatistic.ProfitResultsLastTenDays?.MinProfit:F1} | Loss {productionStatistic.ProfitResultsLastTenDays?.LossPercentage} %");
 
         if (listResourceDetails)
         {
