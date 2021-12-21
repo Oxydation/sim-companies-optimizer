@@ -9,6 +9,6 @@ public interface IProfitOptimizer
     public Task<ProductionStatistic> OptimalBuildingLevelForHorizontalProduction(ResourceId resourceId,
         CancellationToken cancellationToken, int buildingLevelLimit = 200);
 
-    public Task<List<ProductionStatistic>> OptimalBuildingsForGivenResourcesRandom(IList<ResourceId> resources,
+    public Task<List<ProductionStatistic>> OptimalBuildingsRandom(IList<ResourceId> resources,
         SimulationConfiguration simulationConfiguration, CancellationToken cancellationToken);
 }

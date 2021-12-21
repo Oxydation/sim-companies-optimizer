@@ -58,13 +58,11 @@ public class ProfitOptimizer : IProfitOptimizer
         return bestProductionStatistic;
     }
 
-    public async Task<List<ProductionStatistic>> OptimalBuildingsForGivenResourcesRandom(
+    public async Task<List<ProductionStatistic>> OptimalBuildingsRandom(
         IList<ResourceId> resources, SimulationConfiguration simulationConfiguration,
         CancellationToken cancellationToken)
     {
         var usedSeed = simulationConfiguration.Seed ?? Environment.TickCount;
-        //var random = new Random(usedSeed);
-
 
         var stopWatch = new Stopwatch();
         stopWatch.Start();
@@ -77,7 +75,7 @@ public class ProfitOptimizer : IProfitOptimizer
             var companyParam = new CompanyParameters
             {
                 SimulationParameters = simulationConfiguration,
-                CooOverheadReduction = 7,
+                CooOverheadReduction = simulationConfiguration.CooOverheadReduction,
                 ProductionSpeed = 1.06,
                 InputResourcesFromContracts = simulationConfiguration.ContractSelection == ContractSelection.Enable,
                 MaxBuildingPlaces = simulationConfiguration.MaxBuildingPlaces,
@@ -90,12 +88,11 @@ public class ProfitOptimizer : IProfitOptimizer
 
             var result =
                 await _profitCalculator.CalculateProductionStatisticForCompany(companyParam, cancellationToken);
-            if (!(result.TotalProfitPerHour > currentMaxProfit)) return;
+            if (!(result.TotalProfitPerHour >= currentMaxProfit)) return;
 
-           
+
             currentMaxProfit = result.TotalProfitPerHour;
             bestStatistics.Add(result);
-            // Console.WriteLine($"New max profit found {currentMaxProfit:F0}");
             Console.WriteLine(
                 $"Iteration w. max. profit {result.CalculationDuration}. {result.TotalProfitPerHour:F0} /h"); //| AVG: {result.ProfitResultsLastTenDays?.AvgProfit:F1} | MAX {result.ProfitResultsLastTenDays?.MaxProfit:F1} | MIN {result.ProfitResultsLastTenDays?.MinProfit:F1}");
         });

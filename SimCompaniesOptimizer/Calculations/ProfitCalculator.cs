@@ -25,7 +25,7 @@ public class ProfitCalculator : IProfitCalculator
         return await CalculateProductionStatisticForCompany(companyParameters, null, cancellationToken);
     }
 
-    public async Task<ProfitHistory> CalculateProductionStatisticForCompany(CompanyParameters companyParameters,
+    public async Task<ProfitHistory> CalculateProfitHistoryForCompany(CompanyParameters companyParameters,
         TimeSpan timeSpanIntoPast,
         TimeSpan stepInterval, CancellationToken cancellationToken)
     {
@@ -35,7 +35,7 @@ public class ProfitCalculator : IProfitCalculator
         var result = new ProfitHistory();
         var profits = new ConcurrentBag<Profit>();
 
-        Parallel.ForEach(exchangeTrackerEntries.Where(x => x.Timestamp.HasValue), async (entry, state) => 
+        Parallel.ForEach(exchangeTrackerEntries.Where(x => x.Timestamp.HasValue), async (entry, state) =>
         {
             var productionStatistic =
                 await CalculateProductionStatisticForCompany(companyParameters, entry, cancellationToken);
@@ -52,7 +52,7 @@ public class ProfitCalculator : IProfitCalculator
         result.MinProfit = result.Profits.Min(x => x.Value);
         result.CountIterationsWithLoss = result.Profits.Count(x => x.Value <= 0);
         result.CountIterationsWithProfit = result.Profits.Count(x => x.Value > 0);
-        result.LossPercentage = ((result.CountIterationsWithLoss * 1.0)/result.Profits.Count) * 100;
+        result.LossPercentage = result.CountIterationsWithLoss * 1.0 / result.Profits.Count * 100;
         return result;
     }
 

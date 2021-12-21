@@ -4,6 +4,8 @@ namespace SimCompaniesOptimizer.Optimization;
 
 public class SimulationConfiguration
 {
+    public double CooOverheadReduction { get; set; } = 0;
+
     public int Generations { get; set; } = 1000;
     public int BuildingLevelLimit { get; set; } = 30;
 
