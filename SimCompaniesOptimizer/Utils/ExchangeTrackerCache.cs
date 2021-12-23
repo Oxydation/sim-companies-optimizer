@@ -31,12 +31,12 @@ public class ExchangeTrackerCache : IExchangeTrackerCache
         var result = await _exchangeTrackerReader.GetAllEntriesFromExchangeApiAsync(cancellationToken);
         var exchangeTrackerEntries = result.Where(r => r.Timestamp != null && r.ExchangePrices.Any()).ToList();
         await using var dbContext = new SimCompaniesDbContext();
-        foreach (var exchangeTrackerEntry in exchangeTrackerEntries.Where(exchangeTrackerEntry =>
-                     dbContext.ExchangeTrackerEntries.FirstOrDefault(x =>
-                         x.Timestamp == exchangeTrackerEntry.Timestamp) ==
-                     null))
-            dbContext.Add(exchangeTrackerEntry);
+        var newEntries = exchangeTrackerEntries.Where(exchangeTrackerEntry =>
+                dbContext.ExchangeTrackerEntries.FirstOrDefault(x => x.Timestamp == exchangeTrackerEntry.Timestamp) ==
+                null)
+            .ToList();
 
+        dbContext.ExchangeTrackerEntries.AddRange(newEntries);
         await dbContext.SaveChangesAsync(cancellationToken);
         _cache = dbContext.ExchangeTrackerEntries.ToList();
     }
@@ -48,7 +48,7 @@ public class ExchangeTrackerCache : IExchangeTrackerCache
         if (stepInterval == null) return entries;
 
         // Get only by interval https://newbedev.com/linq-aggregate-and-group-by-periods-of-time
-        return entries.GroupBy(s => s.Timestamp.Value.Ticks / TimeSpan.FromHours(1).Ticks)
+        return entries.GroupBy(s => s.Timestamp.Value.Ticks / stepInterval.Value.Ticks)
             .Select(s => s.First()).ToList();
     }
 
@@ -72,7 +72,7 @@ public class ExchangeTrackerCache : IExchangeTrackerCache
                 var latestEntry = await GetLatestEntry(cancellationToken);
                 var maxOldestEntryTimeStamp = latestEntry.Timestamp.Value.Subtract(timeSpanIntoPast.Value);
                 _cache = dbContext.ExchangeTrackerEntries.Where(x => x.Timestamp.HasValue)
-                    .Where(x => x.Timestamp >= maxOldestEntryTimeStamp).ToList();
+                    .Where(x => (DateTime)(object)x.Timestamp >= maxOldestEntryTimeStamp.DateTime).ToList();
             }
             else
             {

@@ -85,7 +85,7 @@ static async void RunOptions(ParameterOptions options)
         CalculateProfitHistoryForAllNewMaxProfits = true,
         OptimizationObjective = OptimizationObjective.MaxAvgOverLastXDays,
         DaysIntoPast = TimeSpan.FromDays(10),
-        StepInterval = TimeSpan.FromHours(1)
+        StepInterval = TimeSpan.FromHours(3)
     };
 
     Parallel.For(0, restarts, new ParallelOptions { MaxDegreeOfParallelism = options.CountConcurrentRuns ?? 1 },
