@@ -12,4 +12,6 @@ public class ProfitHistory
     public int CountIterationsWithLoss { get; set; }
     public int CountIterationsWithProfit { get; set; }
     public double LossPercentage { get; set; }
+
+    public TimeSpan CalcDuration { get; set; }
 }

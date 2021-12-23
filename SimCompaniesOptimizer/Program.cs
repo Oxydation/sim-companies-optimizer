@@ -51,9 +51,6 @@ static async void RunOptions(ParameterOptions options)
     var profitCalculator = serviceProvider.GetService<IProfitCalculator>();
     var exchangeTrackerCache = serviceProvider.GetService<IExchangeTrackerCache>();
 
-//await simCompaniesApi.GetAllResourcesAsync(CancellationToken.None);
-//await simCompaniesApi.UpdateExchangePriceOfAllResources(CancellationToken.None);
-
 
     // new List<ResourceId>
     // {
@@ -63,8 +60,14 @@ static async void RunOptions(ParameterOptions options)
 
     if (options.ForceExchangeTrackerSync)
     {
-        await exchangeTrackerCache.RefreshCache(CancellationToken.None);
-        await simCompaniesApi.UpdateExchangePriceOfAllResources(CancellationToken.None);
+        var latestEntry = await exchangeTrackerCache.GetLatestEntry(CancellationToken.None);
+        if (latestEntry != null && latestEntry.Timestamp.Value.UtcDateTime <
+            DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(1)))
+        {
+            await simCompaniesApi.GetAllResourcesAsync(CancellationToken.None);
+            await exchangeTrackerCache.SyncNewExchangeEntries(CancellationToken.None);
+            await simCompaniesApi.UpdateExchangePriceOfAllResources(CancellationToken.None);
+        }
     }
 
     var restarts = options.Restarts ?? 1;
@@ -80,7 +83,9 @@ static async void RunOptions(ParameterOptions options)
         BuildingLevelLimit = options.MaxBuildingLevel,
         MaxBuildingPlaces = options.MaxBuildingPlaces,
         CalculateProfitHistoryForAllNewMaxProfits = true,
-        OptimizationObjective = OptimizationObjective.MaxAvgOverLastXDays
+        OptimizationObjective = OptimizationObjective.MaxAvgOverLastXDays,
+        DaysIntoPast = TimeSpan.FromDays(10),
+        StepInterval = TimeSpan.FromHours(1)
     };
 
     Parallel.For(0, restarts, new ParallelOptions { MaxDegreeOfParallelism = options.CountConcurrentRuns ?? 1 },
@@ -90,7 +95,7 @@ static async void RunOptions(ParameterOptions options)
 
             var bestResults = await profitOptimizer.OptimalBuildingsRandom(
                 options.Resources.Select(r => (ResourceId)r).ToList(), simulationParams, CancellationToken.None);
-            
+
             var bestOfRun = bestResults.MaxByOptimizationObjective(simulationParams.OptimizationObjective);
             optimizationRunsResults.Add(bestOfRun);
             bestOfRun?.PrintToConsole(false);
@@ -105,10 +110,12 @@ static async void RunOptions(ParameterOptions options)
     Console.WriteLine(
         $"AVG: {veryBest.ProfitResultsLastTenDays?.AvgProfitPerHour:F1} | MAX {veryBest.ProfitResultsLastTenDays?.MaxProfitPerHour:F1} | MIN {veryBest.ProfitResultsLastTenDays?.MinProfitPerHour:F1}");
 
-    var orderedResults = optimizationRunsResults.OrderByOptimizationObjective(simulationParams.OptimizationObjective).ToList();
+    var orderedResults = optimizationRunsResults.OrderByOptimizationObjective(simulationParams.OptimizationObjective)
+        .ToList();
 
     await using var fileStream =
-        new StreamWriter($"{DateTime.Now.Ticks}_{simulationParams.OptimizationObjective}_{veryBest?.TotalProfitPerHour:F0}.json");
+        new StreamWriter(
+            $"{DateTime.Now.Ticks}_{simulationParams.OptimizationObjective}_{veryBest.ProfitResultsLastTenDays?.AvgProfitPerHour.ToString("F0") ?? veryBest?.TotalProfitPerHour.ToString("F0")}.json");
     var serializedResult = JsonSerializer.Serialize(orderedResults);
     fileStream.Write(serializedResult);
     fileStream.Close();

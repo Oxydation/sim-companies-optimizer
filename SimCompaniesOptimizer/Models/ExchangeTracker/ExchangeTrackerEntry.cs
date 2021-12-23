@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace SimCompaniesOptimizer.Models.ExchangeTracker;
@@ -8,8 +9,9 @@ public class ExchangeTrackerEntry
     [JsonIgnore] private static readonly List<ResourceId> ResourceEnumValues = Enum.GetValues<ResourceId>().ToList();
 
     // [CsvHelper.Configuration.Attributes.Ignore]
-    public string Empty { get; set; }
-    public string Empty2 { get; set; }
+    [NotMapped] public string Empty { get; set; }
+
+    [NotMapped] public string Empty2 { get; set; }
 
     [Key] public DateTimeOffset? Timestamp { get; set; }
 
@@ -17,10 +19,8 @@ public class ExchangeTrackerEntry
 
     public double? GetPriceOfResource(ResourceId resourceId)
     {
-        if (GetIndexOfResourceId(resourceId) >= ExchangePrices.Count || GetIndexOfResourceId(resourceId)  < 0)
-        {
-            Console.WriteLine("OOOHHH");
-        }
+        if (GetIndexOfResourceId(resourceId) >= ExchangePrices.Count || GetIndexOfResourceId(resourceId) < 0)
+            Console.WriteLine("Error");
 
         return ExchangePrices.Count == 0 ? null : ExchangePrices[GetIndexOfResourceId(resourceId)];
     }
@@ -29,6 +29,7 @@ public class ExchangeTrackerEntry
     {
         if (NotSellableResourceIds.NotSellableResources.Contains(resourceId)) return -1;
 
+        // TODO: problem: Aearospace reasearch can be sold but for production it needs unsellable stuff.
         ResourceEnumValues.RemoveAll(x => NotSellableResourceIds.NotSellableResources.Contains(x));
         return ResourceEnumValues.IndexOf(resourceId);
     }

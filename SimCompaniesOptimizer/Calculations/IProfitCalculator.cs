@@ -9,5 +9,5 @@ public interface IProfitCalculator
         CancellationToken cancellationToken);
 
     Task<ProfitHistory> CalculateProfitHistoryForCompany(CompanyParameters companyParameters,
-        TimeSpan timeSpanIntoPast, TimeSpan stepInterval, CancellationToken cancellationToken);
+        TimeSpan timeSpanIntoPast, TimeSpan? stepInterval, CancellationToken cancellationToken);
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SimCompaniesOptimizer.Database;
 
@@ -10,9 +11,10 @@ using SimCompaniesOptimizer.Database;
 namespace SimCompaniesOptimizer.Migrations
 {
     [DbContext(typeof(SimCompaniesDbContext))]
-    partial class SimCompaniesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20211223162441_RemoveUnusedProperties")]
+    partial class RemoveUnusedProperties
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "6.0.0");

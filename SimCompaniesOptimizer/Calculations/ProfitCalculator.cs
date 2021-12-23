@@ -27,15 +27,16 @@ public class ProfitCalculator : IProfitCalculator
 
     public async Task<ProfitHistory> CalculateProfitHistoryForCompany(CompanyParameters companyParameters,
         TimeSpan timeSpanIntoPast,
-        TimeSpan stepInterval, CancellationToken cancellationToken)
+        TimeSpan? stepInterval, CancellationToken cancellationToken)
     {
-        var exchangeTrackerEntries = await _exchangeTrackerCache.GetEntries(cancellationToken);
-        // TOdo get given timespan and only by interval: https://newbedev.com/linq-aggregate-and-group-by-periods-of-time
-
+        var filteredEntries =
+            await _exchangeTrackerCache.GetEntriesByInterval(stepInterval, timeSpanIntoPast, cancellationToken);
         var result = new ProfitHistory();
         var profits = new ConcurrentBag<Profit>();
 
-        Parallel.ForEach(exchangeTrackerEntries.Where(x => x.Timestamp.HasValue), async (entry, state) =>
+        var stopWatch = new Stopwatch();
+        stopWatch.Start();
+        Parallel.ForEach(filteredEntries, async (entry, state) =>
         {
             var productionStatistic =
                 await CalculateProductionStatisticForCompany(companyParameters, entry, cancellationToken);
@@ -54,6 +55,8 @@ public class ProfitCalculator : IProfitCalculator
         result.CountIterationsWithLoss = result.Profits.Count(x => x.Value <= 0);
         result.CountIterationsWithProfit = result.Profits.Count(x => x.Value > 0);
         result.LossPercentage = result.CountIterationsWithLoss * 1.0 / result.Profits.Count * 100;
+        stopWatch.Stop();
+        result.CalcDuration = stopWatch.Elapsed;
         return result;
     }
 
@@ -113,12 +116,8 @@ public class ProfitCalculator : IProfitCalculator
         }
 
         foreach (var (resourceId, resourceStatistic) in productionStatistic.ResourceStatistic)
-        {
             if (resourceStatistic.ProfitPerHour > 0)
-            {
                 resourceStatistic.PercentageOfProfit = resourceStatistic.ProfitPerHour / totalProfitPerHour;
-            }
-        }
 
         productionStatistic.TotalProfitPerHour = totalProfitPerHour;
         productionStatistic.TotalRevenuePerHour = totalRevenuePerHour;
