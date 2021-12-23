@@ -62,7 +62,7 @@ static async void RunOptions(ParameterOptions options)
     {
         var latestEntry = await exchangeTrackerCache.GetLatestEntry(CancellationToken.None);
         if (latestEntry != null && latestEntry.Timestamp.Value.UtcDateTime <
-            DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(1)))
+            DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(2)))
         {
             await simCompaniesApi.GetAllResourcesAsync(CancellationToken.None);
             await exchangeTrackerCache.SyncNewExchangeEntries(CancellationToken.None);
@@ -110,6 +110,8 @@ static async void RunOptions(ParameterOptions options)
     Console.WriteLine(
         $"AVG: {veryBest.ProfitResultsLastTenDays?.AvgProfitPerHour:F1} | MAX {veryBest.ProfitResultsLastTenDays?.MaxProfitPerHour:F1} | MIN {veryBest.ProfitResultsLastTenDays?.MinProfitPerHour:F1}");
 
+    var bestResource = veryBest.ResourceStatistic.MaxBy(x => x.Value.PercentageOfProfit);
+    Console.WriteLine($"Top resource: {bestResource.Key}: {bestResource.Value.PercentageOfProfit:F3}% of profit, {bestResource.Value.ProfitPerDay:F0} profit/d");
     var orderedResults = optimizationRunsResults.OrderByOptimizationObjective(simulationParams.OptimizationObjective)
         .ToList();
 
